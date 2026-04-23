@@ -1,0 +1,5 @@
+*.hot-update.js
+*.hot-update.json
+*.pack.gz
+*.pack.gz.old
+.next/

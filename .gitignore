@@ -4,3 +4,8 @@ __pycache__/
 .env
 env
 node_modules/
+.next/
+*.pack.gz
+*.pack.gz.old
+*.hot-update.json
+*.hot-update.js
