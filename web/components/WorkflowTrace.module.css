@@ -1,0 +1,108 @@
+.container {
+  background: #161b22;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #30363d;
+}
+
+.title {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.stepList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.35rem;
+  background: #0f1115;
+  border: 1px solid #30363d;
+}
+
+.step.pending {
+  border-color: #8b949e;
+}
+
+.step.running {
+  border-color: #58a6ff;
+}
+
+.step.completed {
+  border-color: #3fb950;
+}
+
+.step.failed {
+  border-color: #f85149;
+}
+
+.step.waiting_approval {
+  border-color: #d29922;
+}
+
+.step.approved {
+  border-color: #3fb950;
+}
+
+.step.rejected {
+  border-color: #f85149;
+}
+
+.emoji {
+  margin-right: 0.5rem;
+}
+
+.adapter {
+  color: #8b949e;
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.status {
+  font-size: 0.8rem;
+  color: #8b949e;
+}
+
+.status.pending {
+  color: #8b949e;
+}
+
+.status.running {
+  color: #58a6ff;
+}
+
+.status.completed {
+  color: #3fb950;
+}
+
+.status.failed {
+  color: #f85149;
+}
+
+.status.waiting_approval {
+  color: #d29922;
+}
+
+.status.approved {
+  color: #3fb950;
+}
+
+.status.rejected {
+  color: #f85149;
+}
+
+.results {
+  margin-top: 1rem;
+  background: #0f1115;
+  padding: 0.75rem;
+  border-radius: 0.35rem;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  color: #e6e8eb;
+}
