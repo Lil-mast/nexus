@@ -1,12 +1,12 @@
-import random
+import uuid
 
 class SalesforceAdapter:
     def execute(self, action: str, context: dict):
-        if "permission" in str(context).lower():
+        if context.get("error_type") == "permission_denied":
             raise Exception("Permission denied: insufficient Salesforce privileges")
 
         if action == "create_salesforce_opportunity":
-            opp_id = f"OPP-{random.randint(1000, 9999)}"
+            opp_id = f"OPP-{uuid.uuid4().hex[:8].upper()}"
             return {
                 "status": "success",
                 "action": action,
@@ -14,7 +14,7 @@ class SalesforceAdapter:
                 "message": f"Created opportunity {opp_id} in Salesforce"
             }
         elif action == "log_case_in_salesforce":
-            case_id = f"CASE-{random.randint(1000, 9999)}"
+            case_id = f"CASE-{uuid.uuid4().hex[:8].upper()}"
             return {
                 "status": "success",
                 "action": action,
