@@ -1,0 +1,10 @@
+import { NextResponse } from "next/server";
+
+const MCP_BASE = process.env.MCP_SERVER_URL || "http://localhost:8000";
+
+export async function GET() {
+  const res = await fetch(`${MCP_BASE}/workflows`, { method: "GET" });
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status });
+}
+

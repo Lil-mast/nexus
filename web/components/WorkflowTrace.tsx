@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import styles from "./WorkflowTrace.module.css";
 
 const statusIcons: Record<string, string> = {
@@ -10,6 +11,7 @@ const statusIcons: Record<string, string> = {
   waiting_approval: "⚠",
   approved: "✓",
   rejected: "✗",
+  skipped: "↷",
 };
 
 type Step = {
@@ -26,11 +28,14 @@ export default function WorkflowTrace({
   steps: Step[];
   results: Record<string, any>;
 }) {
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
   const getAdapterDisplay = (adapter: string): string => {
     const names: Record<string, string> = {
       salesforce: "Salesforce",
       jira: "Jira",
       slack: "Slack",
+      internal: "Internal",
       sap: "SAP",
       snowflake: "Snowflake",
     };
@@ -46,8 +51,14 @@ export default function WorkflowTrace({
       waiting_approval: "Awaiting Approval",
       approved: "Approved",
       rejected: "Rejected",
+      skipped: "Skipped",
     };
     return labels[status] || status;
+  };
+
+  const getExtraKeys = (result: any) => {
+    if (!result || typeof result !== "object") return [];
+    return Object.keys(result).filter((k) => !["status", "message", "error", "adapter"].includes(k));
   };
 
   return (
@@ -108,6 +119,32 @@ export default function WorkflowTrace({
                   <div className={styles.approvalHint}>
                     Requires manual approval before proceeding
                   </div>
+                )}
+
+                {result && getExtraKeys(result).length > 0 && (
+                  <details className={styles.details}>
+                    <summary className={styles.detailsSummary}>
+                      Step details ({getExtraKeys(result).length} fields)
+                    </summary>
+                    <pre className={styles.jsonPre}>{JSON.stringify(result, null, 2)}</pre>
+                    <div className={styles.detailsActions}>
+                      <button
+                        type="button"
+                        className={styles.copyButton}
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(JSON.stringify(result, null, 2));
+                            setCopiedKey(step.name);
+                            window.setTimeout(() => setCopiedKey((k) => (k === step.name ? null : k)), 1200);
+                          } catch {
+                            // ignore copy errors (permissions, insecure context)
+                          }
+                        }}
+                      >
+                        {copiedKey === step.name ? "Copied" : "Copy JSON"}
+                      </button>
+                    </div>
+                  </details>
                 )}
               </div>
             </div>

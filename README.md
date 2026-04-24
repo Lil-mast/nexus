@@ -37,6 +37,8 @@ pnpm dev
 
 The frontend will be available at `http://localhost:3000`.
 
+For frontend-specific setup, environment variables, and the end-to-end smoke test (including approval), see [`web/README.md`](web/README.md).
+
 ---
 
 ## Project Structure

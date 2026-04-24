@@ -329,3 +329,59 @@
   line-height: 1.4;
   font-weight: 500;
 }
+
+.details {
+  margin-top: 0.6rem;
+  background: rgba(88, 166, 255, 0.04);
+  border: 1px solid #30363d;
+  border-radius: 0.25rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.detailsSummary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e6e8eb;
+  list-style: none;
+}
+
+.detailsSummary::-webkit-details-marker {
+  display: none;
+}
+
+.jsonPre {
+  margin: 0.6rem 0 0;
+  padding: 0.6rem;
+  border-radius: 0.25rem;
+  background: rgba(15, 17, 21, 0.85);
+  border: 1px solid #30363d;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 0.75rem;
+  color: #8b949e;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.detailsActions {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.copyButton {
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.25rem;
+  border: 1px solid #30363d;
+  background: #161b22;
+  color: #e6e8eb;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.copyButton:hover {
+  border-color: #606060;
+}

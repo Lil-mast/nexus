@@ -42,6 +42,7 @@ class OrchestrateRequest(BaseModel):
 
 
 class ExecuteStepRequest(BaseModel):
+    workflow_id: Optional[str] = None
     step: str
     context: Optional[Dict[str, Any]] = {}
 
@@ -177,6 +178,60 @@ def execute_step(req: ExecuteStepRequest, auth: None = Depends(verify_auth)):
             result = {"status": "failed", "error": error_msg, "action": f"Ask human to clarify {step}"}
         else:
             result = {"status": "failed", "error": error_msg, "action": f"Alternative path for {step}"}
+
+    # If we have a workflow_id, persist step status + result into workflows.json so
+    # the frontend can poll and recover after refresh.
+    if req.workflow_id:
+        workflows = load_workflows()
+        wf = next((w for w in workflows if w.get("id") == req.workflow_id), None)
+        if not wf:
+            raise HTTPException(status_code=404, detail="Workflow not found")
+
+        # Mark as running immediately so the UI can show progress if executions take time.
+        for s in wf["steps"]:
+            if s.get("name") == step:
+                s["status"] = "running"
+                break
+        save_workflow(wf)
+
+        step_found = False
+        for s in wf["steps"]:
+            if s.get("name") == step:
+                step_found = True
+                result_status = result.get("status")
+                if result_status == "waiting_approval":
+                    s["status"] = "waiting_approval"
+                elif result_status == "failed":
+                    s["status"] = "failed"
+                elif result_status in ("success", "skipped"):
+                    s["status"] = "completed"
+                else:
+                    # Best-effort fallback for unknown adapter result formats.
+                    s["status"] = "completed"
+                s["result"] = result
+                break
+
+        if not step_found:
+            raise HTTPException(status_code=404, detail="Step not found in workflow")
+
+        has_pending = any(
+            (s.get("status") == "pending" or s.get("status") == "waiting_approval")
+            for s in wf["steps"]
+        )
+        has_failed = any(
+            (s.get("status") == "failed" or s.get("status") == "rejected")
+            for s in wf["steps"]
+        )
+        if has_failed:
+            wf["status"] = "failed"
+        elif not has_pending:
+            wf["status"] = "completed"
+            if not wf.get("ended_at"):
+                wf["ended_at"] = datetime.utcnow().isoformat()
+        else:
+            wf["status"] = "running"
+
+        save_workflow(wf)
 
     return result
 

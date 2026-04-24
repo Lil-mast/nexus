@@ -7,6 +7,9 @@ type Step = {
   adapter: string;
   status: string;
   requires_approval?: boolean;
+  approval_notes?: string;
+  // Persisted by the MCP server after `/execute`
+  result?: Record<string, unknown>;
 };
 
 interface ApprovalModalProps {
@@ -25,6 +28,7 @@ export default function ApprovalModal({ step, loading, onApprove, onReject }: Ap
     slack: "Slack Messages",
     sap: "SAP System",
     snowflake: "Snowflake Data",
+    internal: "Internal Approval",
   };
 
   const stepDescriptions: Record<string, string> = {
@@ -36,8 +40,12 @@ export default function ApprovalModal({ step, loading, onApprove, onReject }: Ap
     "update_database": "Update enterprise data warehouse",
   };
 
-  const description = stepDescriptions[step.name] || `Execute ${step.name}`;
+  const description =
+    stepDescriptions[step.name] ||
+    (step.result && typeof step.result.message === "string" ? step.result.message : `Execute ${step.name}`);
   const adapterName = adapterDisplayName[step.adapter] || step.adapter;
+  const approvalNotes = step.approval_notes;
+  const suggestedAction = step.result?.action;
 
   return (
     <div className={styles.overlay}>
@@ -64,6 +72,23 @@ export default function ApprovalModal({ step, loading, onApprove, onReject }: Ap
             <p className={styles.warning}>
               This action will connect to your enterprise systems and synchronize data across {adapterName.toLowerCase()}.
             </p>
+
+            {(typeof suggestedAction === "string" && suggestedAction) || (typeof approvalNotes === "string" && approvalNotes) ? (
+              <div className={styles.metaBox}>
+                {typeof suggestedAction === "string" && suggestedAction ? (
+                  <div className={styles.metaRow}>
+                    <span className={styles.metaLabel}>Suggested action</span>
+                    <span className={styles.metaValue}>{suggestedAction}</span>
+                  </div>
+                ) : null}
+                {typeof approvalNotes === "string" && approvalNotes ? (
+                  <div className={styles.metaRow}>
+                    <span className={styles.metaLabel}>Previous notes</span>
+                    <span className={styles.metaValue}>{approvalNotes}</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 

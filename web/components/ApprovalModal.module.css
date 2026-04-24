@@ -133,6 +133,42 @@
   line-height: 1.4;
 }
 
+.metaBox {
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 0.25rem;
+  border: 1px solid #30363d;
+  background: rgba(210, 153, 34, 0.05);
+}
+
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 0.35rem;
+}
+
+.metaRow:first-child {
+  margin-top: 0;
+}
+
+.metaLabel {
+  font-size: 0.78rem;
+  opacity: 0.85;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.metaValue {
+  font-size: 0.85rem;
+  opacity: 0.95;
+  text-align: right;
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .actions {
   display: flex;
   gap: 0.75rem;
