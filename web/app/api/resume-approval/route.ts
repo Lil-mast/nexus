@@ -11,6 +11,14 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify(body),
   });
 
-  const data = await res.json();
+  const raw = await res.text();
+  let data: unknown = null;
+  if (raw && raw.trim()) {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      data = { message: raw };
+    }
+  }
   return NextResponse.json(data, { status: res.status });
 }

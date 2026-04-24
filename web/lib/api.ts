@@ -1,6 +1,7 @@
 "use client";
 
 import type { Step, Workflow, SaaSSystem } from "./types";
+import { getDummyWorkflowById, getDummyWorkflows } from "./dummyData";
 
 type ProxyRequest = {
   endpoint: string;
@@ -25,7 +26,7 @@ export async function apiCallProxy<T>({ endpoint, payload }: ProxyRequest): Prom
     body: JSON.stringify({ endpoint, payload }),
   });
 
-  const data = await response.json();
+  const data = await parseJsonSafe(response);
   if (!response.ok) {
     throw new Error(data?.detail || data?.error || `Request failed with status ${response.status}`);
   }
@@ -67,21 +68,53 @@ export async function resumeWorkflow(params: {
   if (!res.ok) {
     throw new Error(`Server responded with ${res.status}`);
   }
-  return (await res.json()) as { workflow_id: string; status: string; approval: boolean };
+  const data = await parseJsonSafe(res);
+  return (data ?? { workflow_id, status: "resumed", approval }) as { workflow_id: string; status: string; approval: boolean };
 }
 
 export async function fetchWorkflows(): Promise<Workflow[]> {
-  const res = await fetch("/api/workflows", { method: "GET" });
-  if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-  const data = (await res.json()) as BackendWorkflowShape[];
-  return data.map(normalizeWorkflow);
+  try {
+    const res = await fetch("/api/workflows", { method: "GET" });
+    if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+    const data = (await parseJsonSafe(res)) as BackendWorkflowShape[] | null;
+    if (!data || !Array.isArray(data)) throw new Error("Invalid workflows payload");
+    return data.map(normalizeWorkflow);
+  } catch {
+    return getDummyWorkflows();
+  }
 }
 
 export async function fetchWorkflow(workflow_id: string): Promise<Workflow> {
-  const res = await fetch(`/api/workflow/${encodeURIComponent(workflow_id)}`, { method: "GET" });
-  if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-  const data = (await res.json()) as BackendWorkflowShape;
-  return normalizeWorkflow(data);
+  try {
+    const res = await fetch(`/api/workflow/${encodeURIComponent(workflow_id)}`, { method: "GET" });
+    if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+    const data = (await parseJsonSafe(res)) as BackendWorkflowShape | null;
+    if (!data) throw new Error("Invalid workflow payload");
+    return normalizeWorkflow(data);
+  } catch {
+    const fallback = getDummyWorkflowById(workflow_id);
+    if (fallback) return fallback;
+    return {
+      workflow_id,
+      id: workflow_id,
+      intent: "demo_fallback",
+      status: "waiting_approval",
+      started_at: new Date().toISOString(),
+      ended_at: null,
+      steps: [
+        {
+          name: "illustration_step",
+          adapter: "internal",
+          status: "waiting_approval",
+          requires_approval: true,
+          result: {
+            status: "waiting_approval",
+            message: "Demo mode: backend unavailable, using fallback workflow.",
+          },
+        },
+      ],
+    } as Workflow;
+  }
 }
 
 function normalizeWorkflow(wf: BackendWorkflowShape): Workflow {
@@ -91,5 +124,15 @@ function normalizeWorkflow(wf: BackendWorkflowShape): Workflow {
     started_at: wf.started_at ?? null,
     ended_at: wf.ended_at ?? null,
   };
+}
+
+async function parseJsonSafe(response: Response): Promise<any> {
+  const raw = await response.text();
+  if (!raw || !raw.trim()) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return { message: raw };
+  }
 }
 
