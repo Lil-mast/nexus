@@ -3,6 +3,7 @@
 import { useState } from "react";
 import WorkflowTrace from "@/components/WorkflowTrace";
 import ApprovalModal from "@/components/ApprovalModal";
+import SystemSelector, { SaaSSystem } from "@/components/SystemSelector";
 import styles from "./page.module.css";
 
 type Step = {
@@ -25,6 +26,7 @@ type ProxyRequest = {
 
 export default function Home() {
   const [message, setMessage] = useState("");
+  const [selectedSystems, setSelectedSystems] = useState<SaaSSystem[]>(["salesforce", "jira"]);
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [results, setResults] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
@@ -107,7 +109,10 @@ export default function Home() {
 
       const orchData = await callProxy<Workflow>({
         endpoint: "orchestrate",
-        payload: { intent: intentData.intent, context: { message: trimmedMessage } },
+        payload: { 
+          intent: intentData.intent, 
+          context: { message: trimmedMessage, systems: selectedSystems } 
+        },
       });
 
       setWorkflow(orchData);
@@ -199,6 +204,11 @@ export default function Home() {
       </div>
 
       <div className={styles.inputSection}>
+        <SystemSelector 
+          selected={selectedSystems} 
+          onChange={setSelectedSystems}
+          disabled={loading || resuming}
+        />
         <label className={styles.inputLabel}>Describe your event or goal</label>
         <div className={styles.inputRow}>
           <input
