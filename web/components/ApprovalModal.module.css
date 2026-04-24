@@ -1,0 +1,190 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 0.5rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #30363d;
+  background: #0f1115;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  color: #e6e8eb;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: #8b949e;
+  margin: 0;
+}
+
+.content {
+  padding: 1.5rem;
+}
+
+.stepInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.infoRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #0f1115;
+  border-radius: 0.35rem;
+  border: 1px solid #30363d;
+}
+
+.label {
+  font-size: 0.8rem;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 80px;
+}
+
+.value {
+  font-weight: 500;
+  color: #58a6ff;
+  font-family: "Monaco", "Courier New", monospace;
+  font-size: 0.9rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  background: #238636;
+  color: #fff;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.descriptionBox {
+  background: #0f1115;
+  border: 1px solid #30363d;
+  border-left: 3px solid #d29922;
+  border-radius: 0.35rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.description {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #e6e8eb;
+  line-height: 1.5;
+}
+
+.warning {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #d29922;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid #30363d;
+  background: #0f1115;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.rejectButton {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 0.35rem;
+  border: 1px solid #30363d;
+  background: transparent;
+  color: #e6e8eb;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.rejectButton:hover:not(:disabled) {
+  background: rgba(248, 81, 73, 0.1);
+  border-color: #f85149;
+  color: #f85149;
+}
+
+.rejectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.approveButton {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 0.35rem;
+  border: none;
+  background: #238636;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.approveButton:hover:not(:disabled) {
+  background: #2ea043;
+  box-shadow: 0 0 0 3px rgba(35, 134, 54, 0.2);
+}
+
+.approveButton:disabled {
+  background: #30363d;
+  cursor: not-allowed;
+}
