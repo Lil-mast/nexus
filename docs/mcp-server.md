@@ -5,7 +5,7 @@ The MCP (Model Context Protocol) server is a FastAPI application that provides s
 ## Prerequisites
 
 - Python 3.11 or higher
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager (0.4.0 or higher recommended)
 
 ## Project Setup
 
@@ -17,10 +17,11 @@ name = "nexus-mcp"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.115.0",
-    "pydantic>=2.9.0",
-    "uvicorn>=0.32.0",
+    "fastapi>=0.115.0,<1.0.0",
+    "pydantic>=2.9.0,<3.0.0",
+    "uvicorn>=0.32.0,<1.0.0",
 ]
+# Major versions are pinned to prevent unexpected breaking changes.
 ```
 
 ## Running the Server
@@ -32,6 +33,7 @@ All commands should be run from the `mcp/` directory.
 ```bash
 cd mcp
 uv run uvicorn app:app --reload --port 8000
+# Add --host 0.0.0.0 if you need to access the server from another device or container
 ```
 
 ### Production
@@ -55,7 +57,7 @@ The server connects to SaaS tools through adapter modules:
 | Jira | `adapters/jira.py` | Epics, ticket assignment |
 | Slack | `adapters/slack.py` | Notifications and alerts |
 
-Adapters are instantiated at startup and injected into the execution pipeline.
+Adapters are instantiated at startup by the FastAPI app and injected into the execution pipeline via direct module imports (not a dynamic registry or dependency-injection framework). Each adapter is imported in `app.py` and passed to the orchestrator as a typed argument.
 
 ### API Endpoints
 
@@ -77,7 +79,7 @@ Workflow state is stored in `workflows.json` with file-based locking to prevent 
 No environment variables are strictly required for local development. In production you should configure:
 
 - SaaS API credentials per adapter ( Salesforce, Jira, Slack tokens)
-- `VERIFY_AUTH` / API key validation in `verify_auth()`
+> **CRITICAL**: `verify_auth()` in `app.py` is currently a placeholder. You must implement proper API-key or OAuth2 validation before deploying to production. Never disable authentication or hardcode credentials.
 
 ## Next Steps
 

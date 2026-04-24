@@ -50,6 +50,12 @@ export default function WorkflowTrace({
               <div className={`${styles.status} ${statusClass}`}>
                 {step.status}
               </div>
+              {result?.message && (
+                <div className={styles.detail}>{result.message}</div>
+              )}
+              {result?.error && (
+                <div className={styles.error}>{result.error}</div>
+              )}
             </div>
           );
         })}

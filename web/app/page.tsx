@@ -17,68 +17,100 @@ type Workflow = {
   status?: string;
 };
 
+type ProxyRequest = {
+  endpoint: string;
+  payload: Record<string, unknown>;
+};
+
 export default function Home() {
   const [message, setMessage] = useState("");
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [results, setResults] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
+  const [resuming, setResuming] = useState(false);
   const [error, setError] = useState("");
 
+  async function callProxy<T>({ endpoint, payload }: ProxyRequest): Promise<T> {
+    const response = await fetch("/api/mcp-proxy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint, payload }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.detail || data?.error || `Request failed with status ${response.status}`);
+    }
+    return data as T;
+  }
+
+  async function executeStepsSequentially(baseWorkflow: Workflow, startIndex: number, workflowMessage: string) {
+    const updatedSteps = baseWorkflow.steps.map((step) => ({ ...step }));
+    const nextResults = { ...results };
+
+    for (let i = startIndex; i < updatedSteps.length; i += 1) {
+      const step = updatedSteps[i];
+      if (!step) continue;
+      if (step.status !== "pending") continue;
+
+      step.status = "running";
+      setWorkflow({ ...baseWorkflow, steps: [...updatedSteps], status: "running" });
+
+      const execData = await callProxy<Record<string, any>>({
+        endpoint: "execute",
+        payload: { step: step.name, context: { message: workflowMessage } },
+      });
+      nextResults[step.name] = execData;
+
+      if (execData.status === "waiting_approval") {
+        step.status = "waiting_approval";
+        setWorkflow({ ...baseWorkflow, steps: [...updatedSteps], status: "waiting_approval" });
+        setResults(nextResults);
+        return { steps: updatedSteps, status: "waiting_approval", results: nextResults };
+      }
+
+      if (execData.status === "failed") {
+        step.status = "failed";
+        setWorkflow({ ...baseWorkflow, steps: [...updatedSteps], status: "failed" });
+        setResults(nextResults);
+        return { steps: updatedSteps, status: "failed", results: nextResults };
+      }
+
+      step.status = "completed";
+      setWorkflow({ ...baseWorkflow, steps: [...updatedSteps], status: "running" });
+      setResults(nextResults);
+    }
+
+    setWorkflow({ ...baseWorkflow, steps: updatedSteps, status: "completed" });
+    setResults(nextResults);
+    return { steps: updatedSteps, status: "completed", results: nextResults };
+  }
+
   async function handleSend() {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage || loading || resuming) return;
+
     setLoading(true);
     setError("");
     setResults({});
 
     try {
-      // Step 1: Parse intent
-      const intentRes = await fetch("/api/mcp-proxy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endpoint: "intent", payload: { message } }),
+      const intentData = await callProxy<{ intent: string }>({
+        endpoint: "intent",
+        payload: { message: trimmedMessage },
       });
-      const intentData = await intentRes.json();
 
       if (intentData.intent === "unknown") {
         setError("Could not understand intent. Try: 'Acme Corp just signed' or 'Customer escalated'");
-        setLoading(false);
         return;
       }
 
-      // Step 2: Orchestrate
-      const orchRes = await fetch("/api/mcp-proxy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endpoint: "orchestrate", payload: { intent: intentData.intent, context: { message } } }),
+      const orchData = await callProxy<Workflow>({
+        endpoint: "orchestrate",
+        payload: { intent: intentData.intent, context: { message: trimmedMessage } },
       });
-      const orchData = await orchRes.json();
+
       setWorkflow(orchData);
-
-      // Step 3: Execute steps sequentially
-      const newResults: Record<string, any> = {};
-      const updatedSteps = orchData.steps.map((step: Step) => ({ ...step }));
-      for (const step of updatedSteps) {
-        const execRes = await fetch("/api/mcp-proxy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            endpoint: "execute",
-            payload: { step: step.name, context: { message } },
-          }),
-        });
-        const execData = await execRes.json();
-        newResults[step.name] = execData;
-
-        // Update step status in UI
-        if (execData.status === "waiting_approval") {
-          step.status = "waiting_approval";
-        } else if (execData.status === "failed") {
-          step.status = "failed";
-        } else {
-          step.status = "completed";
-        }
-      }
-      setWorkflow({ ...orchData, steps: updatedSteps });
-      setResults(newResults);
+      await executeStepsSequentially(orchData, 0, trimmedMessage);
     } catch (e: any) {
       setError(e.message || "Something went wrong");
     } finally {
@@ -88,6 +120,11 @@ export default function Home() {
 
   async function handleResume(approved: boolean) {
     if (!workflow) return;
+    if (resuming || loading) return;
+
+    setResuming(true);
+    setError("");
+
     try {
       const res = await fetch("/api/resume-approval", {
         method: "POST",
@@ -97,15 +134,31 @@ export default function Home() {
       if (!res.ok) {
         throw new Error(`Server responded with ${res.status}`);
       }
-      const data = await res.json();
-      // Update workflow status locally after resume
+      await res.json();
       const updatedSteps = workflow.steps.map((s) =>
         s.status === "waiting_approval" ? { ...s, status: approved ? "approved" : "rejected" } : { ...s }
       );
-      setWorkflow({ ...workflow, steps: updatedSteps, status: data.status || "running" });
-      alert(`Workflow ${data.workflow_id} ${approved ? "approved" : "rejected"}`);
+      const updatedWorkflow = {
+        ...workflow,
+        steps: updatedSteps,
+        status: approved ? "running" : "failed",
+      };
+      setWorkflow(updatedWorkflow);
+
+      if (approved) {
+        const pendingIndex = updatedWorkflow.steps.findIndex((step) => step.status === "pending");
+        if (pendingIndex >= 0) {
+          await executeStepsSequentially(updatedWorkflow, pendingIndex, message.trim());
+        } else {
+          setWorkflow({ ...updatedWorkflow, status: "completed" });
+        }
+      } else {
+        setError("Workflow rejected. Remaining steps were not executed.");
+      }
     } catch (e: any) {
       setError(e.message || "Failed to resume workflow");
+    } finally {
+      setResuming(false);
     }
   }
 
@@ -124,10 +177,15 @@ export default function Home() {
           onChange={(e) => setMessage(e.target.value)}
           placeholder="e.g. Acme Corp just signed a deal"
           className={styles.input}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              void handleSend();
+            }
+          }}
         />
         <button
           onClick={handleSend}
-          disabled={loading || !message}
+          disabled={loading || resuming || !message.trim()}
           className={styles.sendButton}
         >
           {loading ? "Running..." : "Send"}
@@ -142,6 +200,7 @@ export default function Home() {
 
       {workflow && (
         <>
+          <div className={styles.workflowStatus}>Workflow status: {workflow.status || "running"}</div>
           <WorkflowTrace steps={workflow.steps} results={results} />
 
           {hasWaitingApproval && (
@@ -149,14 +208,16 @@ export default function Home() {
               <button
                 onClick={() => handleResume(true)}
                 className={styles.approveButton}
+                disabled={resuming}
               >
-                Approve
+                {resuming ? "Applying..." : "Approve"}
               </button>
               <button
                 onClick={() => handleResume(false)}
                 className={styles.rejectButton}
+                disabled={resuming}
               >
-                Reject
+                {resuming ? "Applying..." : "Reject"}
               </button>
             </div>
           )}

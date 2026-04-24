@@ -19,6 +19,7 @@
 .step {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
   padding: 0.6rem 0.75rem;
   border-radius: 0.35rem;
@@ -67,6 +68,20 @@
 .status {
   font-size: 0.8rem;
   color: #8b949e;
+}
+
+.detail {
+  width: 100%;
+  margin-top: 0.35rem;
+  color: #8b949e;
+  font-size: 0.8rem;
+}
+
+.error {
+  width: 100%;
+  margin-top: 0.35rem;
+  color: #f85149;
+  font-size: 0.8rem;
 }
 
 .status.pending {

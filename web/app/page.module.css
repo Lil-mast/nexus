@@ -53,6 +53,12 @@
   margin-bottom: 1rem;
 }
 
+.workflowStatus {
+  margin: 0.75rem 0;
+  color: #8b949e;
+  font-size: 0.9rem;
+}
+
 .approvalRow {
   margin-top: 1rem;
   display: flex;
@@ -66,6 +72,12 @@
   background: #238636;
   color: #fff;
   cursor: pointer;
+}
+
+.approveButton:disabled,
+.rejectButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .rejectButton {
