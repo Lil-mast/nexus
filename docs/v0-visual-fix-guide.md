@@ -59,7 +59,7 @@ flowchart LR
 3. **Problem: approval step did not truly continue workflow**
    - Resume could update labels but not reliably continue pending steps.
    - **Fix:** approve path resumes execution from first remaining pending step.
-
+.a.;asamksmkja
 4. **Problem: interaction felt clunky**
    - Blocking alerts and weak input ergonomics.
    - **Fix:** Enter-to-send, disabled controls while busy, inline status/errors.
