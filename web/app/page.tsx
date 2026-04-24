@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import WorkflowTrace from "@/components/WorkflowTrace";
+import ApprovalModal from "@/components/ApprovalModal";
 import styles from "./page.module.css";
 
 type Step = {
@@ -162,67 +163,106 @@ export default function Home() {
     }
   }
 
-  const hasWaitingApproval = workflow?.steps.some((s) => s.status === "waiting_approval");
+  const waitingApprovalStep = workflow?.steps.find((s) => s.status === "waiting_approval");
+  const isWorkflowActive = workflow && (workflow.status === "running" || workflow.status === "waiting_approval");
+
+  const getWorkflowStatusIcon = (status?: string) => {
+    switch (status) {
+      case "running":
+        return "⚡";
+      case "completed":
+        return "✓";
+      case "failed":
+        return "✗";
+      case "waiting_approval":
+        return "⚠";
+      default:
+        return "○";
+    }
+  };
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Nexus Agent</h1>
-      <p className={styles.subtitle}>
-        Goal-driven orchestrator for your SaaS stack. Type a natural event below.
-      </p>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Nexus Agent</h1>
+          <p className={styles.subtitle}>
+            Enterprise SaaS orchestration. Coordinate workflows across Salesforce, Jira, Slack, SAP, and Snowflake.
+          </p>
+        </div>
+        {workflow && (
+          <div className={`${styles.statusIndicator} ${workflow.status}`}>
+            <span className={styles.statusIcon}>{getWorkflowStatusIcon(workflow.status)}</span>
+            <span className={styles.statusText}>{workflow.status || "running"}</span>
+          </div>
+        )}
+      </div>
 
-      <div className={styles.inputRow}>
-        <input
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="e.g. Acme Corp just signed a deal"
-          className={styles.input}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              void handleSend();
-            }
-          }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading || resuming || !message.trim()}
-          className={styles.sendButton}
-        >
-          {loading ? "Running..." : "Send"}
-        </button>
+      <div className={styles.inputSection}>
+        <label className={styles.inputLabel}>Describe your event or goal</label>
+        <div className={styles.inputRow}>
+          <input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="e.g. Acme Corp just signed a $500K deal; Escalate support ticket #12345; Sync customer data from Salesforce to Snowflake"
+            className={styles.input}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                void handleSend();
+              }
+            }}
+            disabled={loading || resuming}
+          />
+          <button
+            onClick={handleSend}
+            disabled={loading || resuming || !message.trim()}
+            className={styles.sendButton}
+          >
+            {loading ? "Orchestrating..." : "Execute"}
+          </button>
+        </div>
       </div>
 
       {error && (
         <div className={styles.error}>
-          {error}
+          <span className={styles.errorIcon}>✗</span>
+          <div className={styles.errorContent}>
+            <strong>Error</strong>
+            <p>{error}</p>
+          </div>
         </div>
       )}
 
-      {workflow && (
-        <>
-          <div className={styles.workflowStatus}>Workflow status: {workflow.status || "running"}</div>
-          <WorkflowTrace steps={workflow.steps} results={results} />
-
-          {hasWaitingApproval && (
-            <div className={styles.approvalRow}>
-              <button
-                onClick={() => handleResume(true)}
-                className={styles.approveButton}
-                disabled={resuming}
-              >
-                {resuming ? "Applying..." : "Approve"}
-              </button>
-              <button
-                onClick={() => handleResume(false)}
-                className={styles.rejectButton}
-                disabled={resuming}
-              >
-                {resuming ? "Applying..." : "Reject"}
-              </button>
-            </div>
-          )}
-        </>
+      {isWorkflowActive && (
+        <WorkflowTrace steps={workflow.steps} results={results} />
       )}
+
+      {workflow && workflow.status === "completed" && (
+        <div className={styles.successMessage}>
+          <span className={styles.successIcon}>✓</span>
+          <div>
+            <strong>Workflow completed successfully</strong>
+            <p>All steps executed. {Object.keys(results).length} system(s) updated.</p>
+          </div>
+        </div>
+      )}
+
+      {workflow && workflow.status === "failed" && !waitingApprovalStep && (
+        <div className={styles.failureMessage}>
+          <span className={styles.failureIcon}>✗</span>
+          <div>
+            <strong>Workflow failed</strong>
+            <p>Check the error details above and try again.</p>
+          </div>
+        </div>
+      )}
+
+      <ApprovalModal
+        step={waitingApprovalStep || null}
+        loading={resuming}
+        onApprove={() => handleResume(true)}
+        onReject={() => handleResume(false)}
+      />
     </div>
   );
 }
